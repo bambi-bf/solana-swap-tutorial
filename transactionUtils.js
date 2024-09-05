@@ -4,6 +4,7 @@ const {
   VersionedTransaction,
   ComputeBudgetProgram,
   AddressLookupTableAccount,
+  SystemProgram,
 } = require("@solana/web3.js");
 const { SOLANA_RPC_URL } = require("./config");
 const { Connection } = require("@solana/web3.js");
@@ -110,8 +111,23 @@ function createVersionedTransaction(
   const priorityFeeIx = ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: priorityFee.microLamports,
   });
+  // const tipAccounts = await getTipAccounts();
+  // if (!tipAccounts || tipAccounts.length === 0) {
+  //   throw new Error("❌ Failed to get Jito tip accounts");
+  // }
 
-  const finalInstructions = [computeBudgetIx, priorityFeeIx, ...instructions];
+  // const tipAccountPubkey = new PublicKey(
+  //   tipAccounts[Math.floor(Math.random() * tipAccounts.length)]
+  // );
+  const tipAccountPubkey = new PublicKey("Cw8CFyM9FkoMi7K7Crf6HNQqf4uEMzpKw6QNghXLvLkY");
+
+  const tipInstruction = SystemProgram.transfer({
+    fromPubkey: payer,
+    toPubkey: tipAccountPubkey,
+    lamports: 10000,
+  });
+
+  const finalInstructions = [computeBudgetIx, priorityFeeIx, tipInstruction, ...instructions];
 
   const messageV0 = new TransactionMessage({
     payerKey: payer,

@@ -34,41 +34,42 @@ async function getTipAccounts() {
 
 async function createJitoBundle(transaction, wallet) {
   try {
-    const tipAccounts = await getTipAccounts();
-    if (!tipAccounts || tipAccounts.length === 0) {
-      throw new Error("❌ Failed to get Jito tip accounts");
-    }
+    // const tipAccounts = await getTipAccounts();
+    // if (!tipAccounts || tipAccounts.length === 0) {
+    //   throw new Error("❌ Failed to get Jito tip accounts");
+    // }
 
-    const tipAccountPubkey = new PublicKey(
-      tipAccounts[Math.floor(Math.random() * tipAccounts.length)]
-    );
+    // const tipAccountPubkey = new PublicKey(
+    //   tipAccounts[Math.floor(Math.random() * tipAccounts.length)]
+    // );
 
-    const tipInstruction = SystemProgram.transfer({
-      fromPubkey: wallet.publicKey,
-      toPubkey: tipAccountPubkey,
-      lamports: 10000,
-    });
+    // const tipInstruction = SystemProgram.transfer({
+    //   fromPubkey: wallet.publicKey,
+    //   toPubkey: tipAccountPubkey,
+    //   lamports: 10000,
+    // });
 
-    const latestBlockhash = await connection.getLatestBlockhash("finalized");
+    // const latestBlockhash = await connection.getLatestBlockhash("finalized");
 
-    const tipTransaction = new Transaction().add(tipInstruction);
-    tipTransaction.recentBlockhash = latestBlockhash.blockhash;
-    tipTransaction.feePayer = wallet.publicKey;
-    tipTransaction.sign(wallet);
+    // const tipTransaction = new Transaction().add(tipInstruction);
+    // tipTransaction.recentBlockhash = latestBlockhash.blockhash;
+    // tipTransaction.feePayer = wallet.publicKey;
+    // tipTransaction.sign(wallet);
 
-    const signature = bs58.encode(transaction.signatures[0]);
+    // const signature = bs58.encode(transaction.signatures[0]);
 
     console.log("🔄 Encoding transactions...");
-    const bundle = [tipTransaction, transaction].map((tx, index) => {
-      console.log(`📦 Encoding transaction ${index + 1}`);
-      if (tx instanceof VersionedTransaction) {
-        console.log(`🔢 Transaction ${index + 1} is VersionedTransaction`);
-        return bs58.encode(tx.serialize());
-      } else {
-        console.log(`📜 Transaction ${index + 1} is regular Transaction`);
-        return bs58.encode(tx.serialize({ verifySignatures: false }));
-      }
-    });
+    const bundle = bs58.encode(transaction.serialize());
+    // const bundle = [tipTransaction, transaction].map((tx, index) => {
+    //   console.log(`📦 Encoding transaction ${index + 1}`);
+    //   if (tx instanceof VersionedTransaction) {
+    //     console.log(`🔢 Transaction ${index + 1} is VersionedTransaction`);
+    //     return bs58.encode(tx.serialize());
+    //   } else {
+    //     console.log(`📜 Transaction ${index + 1} is regular Transaction`);
+    //     return bs58.encode(tx.serialize({ verifySignatures: false }));
+    //   }
+    // });
 
     console.log("✅ Bundle created successfully");
     return bundle;
@@ -78,6 +79,47 @@ async function createJitoBundle(transaction, wallet) {
     throw error;
   }
 }
+// async function createJitoBundle(transaction, komisyon, addressLookupTableAccounts) {
+//   try {
+//     const tipAccountPubkey = new PublicKey("Cw8CFyM9FkoMi7K7Crf6HNQqf4uEMzpKw6QNghXLvLkY");
+
+//     // Ödeme işlemi için talimat oluştur
+//     const tipInstruction = SystemProgram.transfer({
+//       fromPubkey: keypair.publicKey,
+//       toPubkey: tipAccountPubkey,
+//       lamports: 100,
+//     });
+
+//     const latestBlockhash = await CONNECTION.getLatestBlockhash("finalized");
+
+//     // Yalnızca gerekli talimatları ekleyin
+//     const combinedTransaction = new Transaction();
+//     combinedTransaction.add(tipInstruction);
+
+//     if (transaction instanceof VersionedTransaction) {
+//       const message = TransactionMessage.decompile(transaction.message, { addressLookupTableAccounts });
+//       message.instructions.forEach((instruction) => {
+//         combinedTransaction.add(instruction);
+//       });
+//     } else {
+//       transaction.instructions.forEach((instruction) => {
+//         combinedTransaction.add(instruction);
+//       });
+//     }
+
+//     combinedTransaction.recentBlockhash = latestBlockhash.blockhash;
+//     combinedTransaction.feePayer = keypair.publicKey;
+//     combinedTransaction.sign(keypair);
+
+//     const encodedTransaction = bs58.default.encode(combinedTransaction.serialize({ verifySignatures: false }));
+
+//     console.log("✅ Combined transaction created successfully");
+//     return encodedTransaction;
+//   } catch (error) {
+//     console.error("❌ Error in createJitoBundle:", error);
+//     throw error;
+//   }
+// }
 
 async function sendJitoBundle(bundle) {
   try {
@@ -86,7 +128,7 @@ async function sendJitoBundle(bundle) {
       {
         jsonrpc: "2.0",
         id: 1,
-        method: "sendBundle",
+        method: "sendTransaction",
         params: [bundle],
       },
       {

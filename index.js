@@ -20,7 +20,8 @@ const bs58 = require('bs58');
 
 const connection = new Connection(SOLANA_RPC_URL);
 const wallet = Keypair.fromSecretKey(
-  new Uint8Array(JSON.parse(WALLET_PRIVATE_KEY))
+  // new Uint8Array(JSON.parse(WALLET_PRIVATE_KEY))
+  bs58.decode(WALLET_PRIVATE_KEY)
 );
 
 async function swap(
@@ -137,53 +138,23 @@ async function swap(
       // 6. Sign the transaction
       transaction.sign([wallet]);
 
+      // Simulate the transaction
+      console.log(await connection.simulateTransaction(transaction));
+
       // 7. Create and send Jito bundle
       console.log("\n📦 Creating Jito bundle...");
-      const jitoBundle = await createJitoBundle(transaction, wallet);
-      console.log("✅ Jito bundle created successfully");
-
-      console.log("\n📤 Sending Jito bundle...");
-      let bundleId = await sendJitoBundle(jitoBundle);
-      console.log(`✅ Jito bundle sent. Bundle ID: ${bundleId}`);
-
-      console.log("\n🔍 Checking bundle status...");
-      let bundleStatus = null;
-      let bundleRetries = 3;
-      const delay = 15000; // Wait 15 seconds
-
-      while (bundleRetries > 0) {
-        console.log(`⏳ Waiting for 15 seconds before checking status...`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-
-        bundleStatus = await checkBundleStatus(bundleId);
-
-        if (bundleStatus && bundleStatus.status === "Landed") {
-          console.log(`✔ Bundle finalized. Slot: ${bundleStatus.landedSlot}`);
-          break;
-        } else if (bundleStatus && bundleStatus.status === "Failed") {
-          console.log("❌ Bundle failed. Retrying...");
-          bundleId = await sendJitoBundle(jitoBundle);
-          console.log(`New Bundle ID: ${bundleId}`);
-        } else {
-          console.log(
-            `Bundle not finalized. Status: ${
-              bundleStatus ? bundleStatus.status : "unknown"
-            }`
-          );
-        }
-
-        bundleRetries--;
-      }
-
-      if (!bundleStatus || bundleStatus.status !== "Landed") {
-        throw new Error("Failed to execute swap after multiple attempts.");
-      }
-
+      // const jitoBundle = await createJitoBundle(transaction, wallet);
+      const sig = await connection.sendRawTransaction(transaction.serialize(), {
+        skipPreflight: true,
+        maxRetries: 3,
+        preflightCommitment: 'confirmed',
+      })
+      const tx = await connection.confirmTransaction(sig)
+      console.log("✅ Jito bundle created successfully: ", sig);
       console.log("\n✨ Swap executed successfully! ✨");
       console.log("========== SWAP COMPLETE ==========\n");
 
-      const signature = bs58.encode(transaction.signatures[0]);
-      return { bundleStatus, signature };
+      return { sig };
     } catch (error) {
       console.error(
         `\n❌ Error executing swap (attempt ${retries + 1}/${maxRetries}):`
@@ -206,7 +177,7 @@ async function main() {
   try {
     const inputMint = "So11111111111111111111111111111111111111112"; // Wrapped SOL
     const outputMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // USDC
-    const amount = 0.01; // 0.01 SOL
+    const amount = 0.001; // 0.01 SOL
     const initialSlippageBps = 100; // 1% initial slippage
     const maxRetries = 5;
 
@@ -225,9 +196,8 @@ async function main() {
 
     console.log("\n🎉 Swap completed successfully!");
     console.log("Swap result:");
-    console.log(JSON.stringify(result.bundleStatus, null, 2));
-    console.log("\n🖋️  Transaction signature:", result.signature);
-    console.log(`🔗 View on Solscan: https://solscan.io/tx/${result.signature}`);
+    console.log("\n🖋️  Transaction signature:", result.sig);
+    console.log(`🔗 View on Solscan: https://solscan.io/tx/${result.sig}`);
   } catch (error) {
     console.error("\n💥 Error in main function:");
     console.error(error.message);
