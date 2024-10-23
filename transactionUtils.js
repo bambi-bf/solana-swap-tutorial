@@ -82,6 +82,7 @@ async function simulateTransaction(
       const computeUnits = Math.ceil(unitsConsumed * 1.2);
       return computeUnits;
     } catch (error) {
+      console.log("🚀 ~ error:", error)
       console.error("❌ Error during simulation:", error.message);
       if (error.message.includes("InsufficientFundsForRent")) {
         return { error: "InsufficientFundsForRent" };
